@@ -1,4 +1,6 @@
 # Galen Dively
+# CSI-260
+# List Comprehension Lab
 
 
 # Generate a list of all of the numbers from 1-1000 that are divisible by 7
