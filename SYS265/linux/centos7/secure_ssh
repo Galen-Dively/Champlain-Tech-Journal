@@ -1,0 +1,41 @@
+#!/bin/bash
+
+# Check if a username is provided
+if [ -z "$1" ]; then
+    echo "Usage: $0 <username>"
+    exit 1
+fi
+
+USERNAME=$1
+SSH_KEY_URL="https://raw.githubusercontent.com/Galen-Dively/Champlain-Tech-Journal/refs/heads/main/SYS265/linux/public-keys/public_key.pub"
+LOCAL_KEY_PATH="/home/$USERNAME/.ssh/public_key.pub"
+
+# Disable root SSH login
+echo "Disabling root SSH login..."
+sed -i 's/^PermitRootLogin yes/PermitRootLogin no/' /etc/ssh/sshd_config
+sed -i 's/^#PermitRootLogin prohibit-password/PermitRootLogin no/' /etc/ssh/sshd_config
+systemctl restart sshd
+
+# Create new user
+echo "Creating new user: $USERNAME..."
+useradd -m -s /bin/bash "$USERNAME"
+passwd "$USERNAME"  # Prompt to set a password
+usermod -aG wheel "$USERNAME"  # Optional: Add user to sudo group
+
+# Set up SSH key authentication
+echo "Setting up SSH key authentication for $USERNAME..."
+mkdir -p "/home/$USERNAME/.ssh"
+chmod 700 "/home/$USERNAME/.ssh"
+
+# Fetch public key from remote repo
+curl -s "$SSH_KEY_URL" -o "$LOCAL_KEY_PATH"
+
+# Add key to authorized_keys
+cat "$LOCAL_KEY_PATH" >> "/home/$USERNAME/.ssh/authorized_keys"
+chmod 600 "/home/$USERNAME/.ssh/authorized_keys"
+chown -R "$USERNAME:$USERNAME" "/home/$USERNAME/.ssh"
+
+# Remove downloaded key file
+rm -f "$LOCAL_KEY_PATH"
+
+echo "User $USERNAME created and SSH key added. Root SSH login disabled."
