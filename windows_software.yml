@@ -4,9 +4,12 @@
   gather_facts: no
   tasks:
     - name: Ensure Chocolatey is installed
-      win_chocolatey:
-        name: chocolatey
-        state: present
+      win_shell: |
+        Set-ExecutionPolicy Bypass -Scope Process -Force
+        [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12
+        Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+      args:
+        executable: powershell
 
     - name: Install Google Chrome
       win_chocolatey:
