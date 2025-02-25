@@ -1,0 +1,24 @@
+---
+- name: Install software on Windows using Chocolatey
+  hosts: windows
+  gather_facts: no
+  tasks:
+    - name: Ensure Chocolatey is installed
+      win_chocolatey:
+        name: chocolatey
+        state: present
+
+    - name: Install Google Chrome
+      win_chocolatey:
+        name: googlechrome
+        state: present
+
+    - name: Install Notepad++
+      win_chocolatey:
+        name: notepadplusplus
+        state: present
+
+    - name: Install 7-Zip
+      win_chocolatey:
+        name: 7zip
+        state: present
