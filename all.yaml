@@ -1,0 +1,70 @@
+---
+- name: Security and Administration Playbook
+  hosts: all
+  become: yes
+  tasks:
+
+    - name: Ensure time synchronization (NTP) on all servers
+      ansible.builtin.command: timedatectl set-ntp on
+      when: ansible_os_family == 'Rocky'
+
+    - name: Ensure Windows time service is running
+      win_service:
+        name: W32Time
+        state: started
+      when: ansible_os_family == 'Windows'
+
+    - name: Disable root SSH login on Rocky servers
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^PermitRootLogin'
+        line: 'PermitRootLogin no'
+        state: present
+      notify: Restart SSH
+      when: ansible_os_family == 'Rocky'
+
+    - name: Set strong password policies on Windows servers
+      win_user_right:
+        name: SeDenyNetworkLogonRight
+        users:
+          - Administrator
+      when: ansible_os_family == 'Windows'
+
+    - name: Disable local admin accounts via GPO
+      win_regedit:
+        path: HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System
+        name: LocalAccountTokenFilterPolicy
+        data: 0
+        type: dword
+      when: ansible_os_family == 'Windows'
+
+    - name: Restrict PowerShell execution to signed scripts only
+      win_regedit:
+        path: HKLM:\Software\Policies\Microsoft\Windows\PowerShell\ExecutionPolicy
+        name: ExecutionPolicy
+        data: "AllSigned"
+        type: string
+      when: ansible_os_family == 'Windows'
+
+    - name: Configure system logging with rsyslog on Rocky servers
+      ansible.builtin.template:
+        src: rsyslog.conf.j2
+        dest: /etc/rsyslog.conf
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Restart rsyslog
+      when: ansible_os_family == 'Rocky'
+
+  handlers:
+    - name: Restart SSH
+      ansible.builtin.service:
+        name: sshd
+        state: restarted
+      when: ansible_os_family == 'Rocky'
+
+    - name: Restart rsyslog
+      ansible.builtin.service:
+        name: rsyslog
+        state: restarted
+      when: ansible_os_family == 'Rocky'
